@@ -4,7 +4,7 @@ version = "2.0.0"
 description = "A Discord bot for looking up Magic: The Gathering cards using Scryfall API"
 requires-python = ">=3.12"
 dependencies = [
-    "discord.py @ file:///Users/sawyer/github/python-bots/discord.py",
+    "discord.py",
     "httpx>=0.28.1",
     "pydantic-settings>=2.10.1",
     "structlog>=25.4.0",

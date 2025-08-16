@@ -4,7 +4,7 @@ version = "4.0.0"
 description = "An unhinged Discord bot inspired by Microsoft Office's Clippy"
 requires-python = ">=3.12"
 dependencies = [
-    "discord.py @ file:///Users/sawyer/github/python-bots/discord.py",
+    "discord.py",
     "httpx>=0.28.1",
     "pydantic-settings>=2.10.1",
     "structlog>=25.4.0",

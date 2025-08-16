@@ -22,10 +22,14 @@ dev-dependencies = [
     "mypy>=1.17.1",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
+    "discord-py",
 ]
 
 [tool.uv.workspace]
 members = ["bots/*"]
+
+[tool.uv.sources]
+discord-py = { path = "discord.py" }
 
 [tool.ruff]
 line-length = 88

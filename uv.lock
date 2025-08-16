@@ -1069,6 +1069,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "discord-py" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1086,6 +1087,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "discord-py", directory = "discord.py" },
     { name = "mypy", specifier = ">=1.17.1" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", specifier = ">=1.1.0" },

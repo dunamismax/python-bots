@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "discord.py @ file:///Users/sawyer/github/python-bots/discord.py",
+    "discord.py",
     "aiohttp>=3.12.15",
     "yt-dlp>=2025.8.11",
     "PyNaCl>=1.5.0",  # For voice support

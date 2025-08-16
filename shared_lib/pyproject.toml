@@ -33,14 +33,14 @@ packages = ["src/shared"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "I", "N", "UP", "ANN", "S", "C4", "T20"]
 ignore = ["ANN101", "ANN102", "S101"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

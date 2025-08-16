@@ -1,12 +1,12 @@
-discord.py>=2.4.0
-httpx>=0.25.0
-pydantic-settings>=2.0.0
-structlog>=23.1.0
-aiosqlite>=0.19.0
+discord.py>=2.5.2
+httpx>=0.28.1
+pydantic-settings>=2.10.1
+structlog>=25.4.0
+aiosqlite>=0.21.0
 shared
 
 [dev]
-ruff>=0.1.0
-mypy>=1.6.0
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
+ruff>=0.12.9
+mypy>=1.17.1
+pytest>=8.4.1
+pytest-asyncio>=1.1.0

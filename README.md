@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white" alt="Python Version"></a>
+  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.12+-3776AB.svg?logo=python&logoColor=white" alt="Python Version"></a>
   <a href="https://github.com/Rapptz/discord.py"><img src="https://img.shields.io/badge/Discord-discord.py-5865F2.svg?logo=discord&logoColor=white" alt="discord.py"></a>
   <a href="https://scryfall.com/docs/api"><img src="https://img.shields.io/badge/API-Scryfall-FF6B35.svg" alt="Scryfall API"></a>
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/badge/Package-uv-purple.svg" alt="uv"></a>
@@ -46,7 +46,7 @@ A modern Discord bot monorepo written in Python, featuring three specialized bot
 
 ### Prerequisites
 
-- **Python 3.11+** - Modern Python with latest async features
+- **Python 3.12+** - Modern Python with latest async features
 - **uv** - Fast Python package manager ([Installation guide](https://docs.astral.sh/uv/getting-started/installation/))
 - **Discord Bot Token(s)** - Create applications at [Discord Developer Portal](https://discord.com/developers/applications)
 - **yt-dlp** - For music bot YouTube integration: `pip install yt-dlp`
@@ -291,7 +291,7 @@ python-bots/
 
 ### Technology Stack
 
-- **Python 3.11+** - Modern async/await syntax and performance improvements
+- **Python 3.12+** - Modern async/await syntax and performance improvements
 - **discord.py 2.5+** - Latest Discord API features and slash commands
 - **pydantic 2.0+** - Type-safe configuration and data validation
 - **structlog** - Structured logging with JSON output support
@@ -411,7 +411,7 @@ WantedBy=multi-user.target
 
 #### Option 3: Docker Containers
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 COPY . .

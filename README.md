@@ -41,7 +41,7 @@ cp env.example .env
 # Edit .env with your Discord bot tokens
 
 # 4. Start bots
-python start_bots.py
+uv run python start_bots.py
 ```
 
 ### Environment Configuration
@@ -110,7 +110,7 @@ python-bots/
 
 ```bash
 # Interactive bot launcher (recommended)
-python start_bots.py
+uv run python start_bots.py
 
 # Individual bot execution
 uv run --package clippy-bot python -m clippy

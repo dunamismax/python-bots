@@ -182,6 +182,7 @@ RANDOM_MESSAGE_DELAY=3         # Delay before random messages (seconds)
 
 - **yt-dlp** (installed via uv for the music bot)
 - **FFmpeg** - [Download FFmpeg](https://ffmpeg.org/download.html)
+- **Opus Library** (macOS: `brew install opus`)
 
 ### Configuration
 
@@ -225,12 +226,14 @@ MUSIC_VOLUME_LEVEL=0.5
 ### 3. Generating Invite URLs
 
 #### For MTG Card Bot (Prefix Commands)
+
 - **Scopes:** `bot`
 - **Permissions:** Send Messages, Embed Links, Attach Files, Read Message History
 
 #### For Clippy & Music Bots (Slash Commands)
+
 - **Scopes:** `bot` + `applications.commands`
-- **Permissions:** 
+- **Permissions:**
   - **Clippy:** Send Messages, Use Application Commands, Add Reactions, Read Message History, Embed Links
   - **Music:** Send Messages, Use Application Commands, Connect, Speak, Read Message History, Embed Links
 
@@ -262,7 +265,7 @@ MTG_GUILD_ID=your_guild_id_for_testing
 1. **Verify OAuth Scopes**
    - Re-invite slash command bots with scopes: `bot` + `applications.commands`
 
-2. **Use Guild-Scoped Registration** 
+2. **Use Guild-Scoped Registration**
    - Set `CLIPPY_GUILD_ID` and/or `MUSIC_GUILD_ID` in `.env`
    - Guild commands appear instantly vs. 1 hour for global commands
 
@@ -307,7 +310,7 @@ MTG_GUILD_ID=your_guild_id_for_testing
 |---------|--------------|------------|-----------|
 | **Command Style** | Prefix (`!`) | Slash (`/`) | Slash (`/`) |
 | **Primary Use** | Card lookup | Entertainment | Audio streaming |
-| **Database Required** | No | No | Yes (playlists) |
+| **Database Required** | No | No | No |
 | **External APIs** | Scryfall | None | YouTube |
 | **Voice Channel** | No | No | Yes |
 | **Message Content Intent** | Required | Recommended | Optional |

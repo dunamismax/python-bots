@@ -123,6 +123,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asyncio-throttle"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/6f/0e2d42c0e95d50edf63147b8a742703061945e02760f25d6a0e8f028ccb0/asyncio-throttle-1.0.2.tar.gz", hash = "sha256:2675282e99d9129ecc446f917e174bc205c65e36c602aa18603b4948567fcbd4", size = 3775, upload-time = "2021-04-07T13:37:50.114Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/6a/d18c93722fb56dc1ffed5fb7e7fcff4f8031f80f84c5cc0427363a036b0c/asyncio_throttle-1.0.2-py3-none-any.whl", hash = "sha256:4d4c1eb3250f735f59ce842d8d92cd2927c008bd52008797ba030b5787c41f3b", size = 4079, upload-time = "2021-04-07T13:37:48.63Z" },
+]
+
+[[package]]
 name = "attrs"
 version = "25.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -297,7 +306,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
-    { name = "discord-py", specifier = ">=2.5.2" },
+    { name = "discord-py", directory = "discord.py" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.1" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
@@ -319,16 +328,45 @@ wheels = [
 
 [[package]]
 name = "discord-py"
-version = "2.5.2"
-source = { registry = "https://pypi.org/simple" }
+source = { directory = "discord.py" }
 dependencies = [
     { name = "aiohttp" },
     { name = "audioop-lts", marker = "python_full_version >= '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/dd/5817c7af5e614e45cdf38cbf6c3f4597590c442822a648121a34dee7fa0f/discord_py-2.5.2.tar.gz", hash = "sha256:01cd362023bfea1a4a1d43f5280b5ef00cad2c7eba80098909f98bf28e578524", size = 1054879, upload-time = "2025-03-05T01:15:29.798Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/a8/dc908a0fe4cd7e3950c9fa6906f7bf2e5d92d36b432f84897185e1b77138/discord_py-2.5.2-py3-none-any.whl", hash = "sha256:81f23a17c50509ffebe0668441cb80c139e74da5115305f70e27ce821361295a", size = 1155105, upload-time = "2025-03-05T01:15:27.323Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "aiodns", marker = "sys_platform != 'win32' and extra == 'speed'", specifier = ">=1.1" },
+    { name = "aiohttp", specifier = ">=3.7.4,<4" },
+    { name = "audioop-lts", marker = "python_full_version >= '3.13'" },
+    { name = "black", marker = "extra == 'dev'", specifier = "==22.6" },
+    { name = "brotli", marker = "extra == 'speed'" },
+    { name = "cchardet", marker = "python_full_version < '3.10' and extra == 'speed'", specifier = "==2.1.7" },
+    { name = "coverage", extras = ["toml"], marker = "extra == 'test'" },
+    { name = "imghdr-lts", marker = "python_full_version >= '3.13' and extra == 'docs'", specifier = "==1.0.0" },
+    { name = "orjson", marker = "extra == 'speed'", specifier = ">=3.5.4" },
+    { name = "pynacl", marker = "extra == 'voice'", specifier = ">=1.5.0,<1.6" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-asyncio", marker = "extra == 'test'" },
+    { name = "pytest-cov", marker = "extra == 'test'" },
+    { name = "pytest-mock", marker = "extra == 'test'" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = "==4.4.0" },
+    { name = "sphinx-inline-tabs", marker = "extra == 'docs'", specifier = "==2023.4.21" },
+    { name = "sphinxcontrib-applehelp", marker = "extra == 'docs'", specifier = "==1.0.4" },
+    { name = "sphinxcontrib-devhelp", marker = "extra == 'docs'", specifier = "==1.0.2" },
+    { name = "sphinxcontrib-htmlhelp", marker = "extra == 'docs'", specifier = "==2.0.1" },
+    { name = "sphinxcontrib-jsmath", marker = "extra == 'docs'", specifier = "==1.0.1" },
+    { name = "sphinxcontrib-qthelp", marker = "extra == 'docs'", specifier = "==1.0.3" },
+    { name = "sphinxcontrib-serializinghtml", marker = "extra == 'docs'", specifier = "==1.1.5" },
+    { name = "sphinxcontrib-trio", marker = "extra == 'docs'", specifier = "==1.1.2" },
+    { name = "sphinxcontrib-websupport", marker = "extra == 'docs'", specifier = "==1.2.4" },
+    { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=4.3,<5" },
+    { name = "typing-extensions", marker = "extra == 'docs'", specifier = ">=4.3,<5" },
+    { name = "typing-extensions", marker = "extra == 'test'", specifier = ">=4.3,<5" },
+    { name = "tzdata", marker = "sys_platform == 'win32' and extra == 'test'" },
+    { name = "zstandard", marker = "extra == 'speed'", specifier = ">=0.23.0" },
 ]
+provides-extras = ["voice", "docs", "speed", "test", "dev"]
 
 [[package]]
 name = "distlib"
@@ -496,7 +534,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
-    { name = "discord-py", specifier = ">=2.5.2" },
+    { name = "discord-py", directory = "discord.py" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.1" },
     { name = "pillow", specifier = ">=11.3.0" },
@@ -578,6 +616,7 @@ source = { editable = "bots/music" }
 dependencies = [
     { name = "aiohttp" },
     { name = "aiosqlite" },
+    { name = "asyncio-throttle" },
     { name = "discord-py" },
     { name = "httpx" },
     { name = "prometheus-client" },
@@ -614,8 +653,9 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.12.15" },
     { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "asyncio-throttle", specifier = ">=1.0.2" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.1.0" },
-    { name = "discord-py", specifier = ">=2.5.2" },
+    { name = "discord-py", directory = "discord.py" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.3.0" },

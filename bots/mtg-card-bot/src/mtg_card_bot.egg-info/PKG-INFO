@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: mtg-card-bot
+Version: 2.0.0
+Summary: A Discord bot for looking up Magic: The Gathering cards using Scryfall API
+Requires-Python: >=3.12
+Requires-Dist: discord.py@ file:///Users/sawyer/github/python-bots/discord.py
+Requires-Dist: httpx>=0.28.1
+Requires-Dist: pydantic-settings>=2.10.1
+Requires-Dist: structlog>=25.4.0
+Requires-Dist: aiosqlite>=0.21.0
+Requires-Dist: pillow>=11.3.0
+Provides-Extra: dev
+Requires-Dist: ruff>=0.12.9; extra == "dev"
+Requires-Dist: mypy>=1.17.1; extra == "dev"
+Requires-Dist: pytest>=8.4.1; extra == "dev"
+Requires-Dist: pytest-asyncio>=1.1.0; extra == "dev"

@@ -46,11 +46,13 @@ class MTGCardBot(discord.Client):
         )
         self.http_client = httpx.AsyncClient(timeout=20.0)
         
-        # Duplicate suppression structures
+        # Enhanced duplicate suppression structures
         # Track recent (author, normalized_content) to timestamp
         self._recent_commands: Dict[tuple[int, str], float] = {}
         # Track processed Discord message IDs
         self._processed_message_ids: set[int] = set()
+        # Background cleanup task
+        self._cleanup_task: Optional[asyncio.Task] = None
 
     async def start(self) -> None:
         # Prefer static token from config; support multiple field names
@@ -59,6 +61,8 @@ class MTGCardBot(discord.Client):
 
     async def setup_hook(self) -> None:
         """Called when the bot is starting up."""
+        # Start background cleanup task
+        self._cleanup_task = asyncio.create_task(self._cleanup_duplicates_periodically())
         self.logger.info("MTG Card bot setup completed")
 
     async def on_ready(self) -> None:
@@ -82,13 +86,21 @@ class MTGCardBot(discord.Client):
         # Remove prefix
         content = message.content[len(self.config.command_prefix):]
         
-        # Suppress duplicate commands from the same user/content within a short window
+        # Enhanced duplicate suppression with longer window and better logging
         normalized = " ".join(content.lower().split())
         key = (message.author.id, normalized)
         now = time.time()
         last = self._recent_commands.get(key)
-        if last is not None and (now - last) < 1.5:
+        
+        # Suppress duplicates within 2.5 seconds
+        if last is not None and (now - last) < 2.5:
+            self.logger.debug("Suppressed duplicate command", 
+                            user_id=str(message.author.id),
+                            username=message.author.name,
+                            content=normalized[:50],
+                            time_since_last=now - last)
             return
+            
         self._recent_commands[key] = now
         self._processed_message_ids.add(message.id)
         
@@ -568,9 +580,49 @@ class MTGCardBot(discord.Client):
         else:
             return f"{secs}s"
 
+    async def _cleanup_duplicates_periodically(self) -> None:
+        """Background task to clean up old duplicate suppression data."""
+        while True:
+            try:
+                await asyncio.sleep(60)  # Clean up every minute
+                now = time.time()
+                cutoff = now - 300  # Keep data for 5 minutes
+                
+                # Clean up old command timestamps
+                old_keys = [key for key, timestamp in self._recent_commands.items() 
+                           if timestamp < cutoff]
+                for key in old_keys:
+                    del self._recent_commands[key]
+                
+                # Clean up old message IDs (keep last 1000)
+                if len(self._processed_message_ids) > 1000:
+                    # Convert to list, sort, and keep newest 500
+                    sorted_ids = sorted(self._processed_message_ids)
+                    self._processed_message_ids = set(sorted_ids[-500:])
+                
+                if old_keys or len(self._processed_message_ids) > 1000:
+                    self.logger.debug("Cleaned up duplicate suppression data",
+                                    commands_removed=len(old_keys),
+                                    message_ids_kept=len(self._processed_message_ids))
+                    
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error("Error in duplicate cleanup task", error=str(e))
+
     async def close(self) -> None:
         """Clean shutdown of the bot."""
         self.logger.info("Shutting down MTG Card bot")
+        
+        # Cancel cleanup task
+        if self._cleanup_task and not self._cleanup_task.done():
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Close HTTP clients
         try:
             await self.scryfall_client.close()
         except Exception as e:
@@ -580,5 +632,9 @@ class MTGCardBot(discord.Client):
             await self.http_client.aclose()
         except Exception as e:
             self.logger.warning("Error closing http client", error=str(e))
+        
+        # Clear duplicate suppression data
+        self._recent_commands.clear()
+        self._processed_message_ids.clear()
         
         await super().close()

@@ -73,17 +73,48 @@ async def main() -> None:
     bot = MusicBot(cfg)
     
     # Set up signal handlers for graceful shutdown
+    shutdown_event = asyncio.Event()
+    
     def signal_handler(signum: int, frame) -> None:
         logger.info("Received shutdown signal", signal=signum)
-        asyncio.create_task(bot.close())
+        shutdown_event.set()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        await bot.start()
+        # Start bot in background
+        bot_task = asyncio.create_task(bot.start())
+        
+        # Wait for shutdown signal or bot failure
+        done, pending = await asyncio.wait(
+            [bot_task, asyncio.create_task(shutdown_event.wait())],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        
+        # Cancel pending tasks
+        for task in pending:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        
+        # Clean shutdown
+        logger.info("Shutting down Music bot...")
+        await bot.close()
+        
+        # Check if bot task failed
+        if bot_task in done and not bot_task.cancelled():
+            try:
+                bot_task.result()
+            except Exception as e:
+                logger.error("Music bot failed", error=str(e))
+                sys.exit(1)
+                
     except Exception as e:
         logger.error("Failed to start Music bot", error=str(e))
+        await bot.close()
         sys.exit(1)
 
 

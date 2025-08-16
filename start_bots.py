@@ -373,31 +373,81 @@ class BotManager:
         self._cleanup_all()
     
     def _cleanup_all(self) -> None:
-        """Clean up all running processes."""
+        """Clean up all running processes with enhanced shutdown."""
         if not hasattr(self, '_cleanup_called'):
             self._cleanup_called = True
         else:
             print("Cleanup already in progress...")
             return
             
+        if not self.processes:
+            print("✅ No processes to cleanup")
+            sys.exit(0)
+            
+        print("🛑 Initiating graceful shutdown of all bots...")
+        
+        # Step 1: Send SIGTERM to all processes for graceful shutdown
         for bot_key, process in self.processes.items():
             if process.poll() is None:  # Process is still running
                 bot_name = self.bots[bot_key]["name"]
-                print(f"   Stopping {bot_name} (PID: {process.pid})...")
+                print(f"   Sending shutdown signal to {bot_name} (PID: {process.pid})...")
                 try:
                     process.terminate()
-                    process.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    print(f"   Force killing {bot_name}...")
-                    process.kill()
-                    try:
-                        process.wait(timeout=2)
-                    except subprocess.TimeoutExpired:
-                        print(f"   Warning: Could not kill {bot_name}")
                 except Exception as e:
-                    print(f"   Error stopping {bot_name}: {e}")
+                    print(f"   Error sending shutdown signal to {bot_name}: {e}")
         
-        print("✅ All bots stopped")
+        # Step 2: Wait for graceful shutdown (up to 8 seconds total)
+        shutdown_timeout = 8
+        start_time = time.time()
+        remaining_processes = list(self.processes.items())
+        
+        while remaining_processes and (time.time() - start_time) < shutdown_timeout:
+            still_running = []
+            for bot_key, process in remaining_processes:
+                if process.poll() is None:
+                    still_running.append((bot_key, process))
+                else:
+                    bot_name = self.bots[bot_key]["name"]
+                    print(f"   ✅ {bot_name} shut down gracefully")
+            
+            remaining_processes = still_running
+            if remaining_processes:
+                time.sleep(0.5)
+        
+        # Step 3: Force kill any remaining processes
+        if remaining_processes:
+            print("   Some processes require force termination...")
+            for bot_key, process in remaining_processes:
+                if process.poll() is None:
+                    bot_name = self.bots[bot_key]["name"]
+                    print(f"   Force killing {bot_name} (PID: {process.pid})...")
+                    try:
+                        process.kill()
+                        process.wait(timeout=3)
+                        print(f"   ✅ {bot_name} force terminated")
+                    except subprocess.TimeoutExpired:
+                        print(f"   ⚠️  Warning: Could not kill {bot_name} (PID: {process.pid})")
+                        print(f"      You may need to manually kill with: kill -9 {process.pid}")
+                    except Exception as e:
+                        print(f"   Error force killing {bot_name}: {e}")
+        
+        # Step 4: Final cleanup and verification
+        time.sleep(0.5)  # Brief pause for processes to fully terminate
+        
+        # Check for any remaining processes
+        remaining_pids = []
+        for bot_key, process in self.processes.items():
+            if process.poll() is None:
+                remaining_pids.append(process.pid)
+        
+        if remaining_pids:
+            print(f"⚠️  Warning: Some processes may still be running: {remaining_pids}")
+            print("   You can manually terminate them with:")
+            for pid in remaining_pids:
+                print(f"   kill -9 {pid}")
+        else:
+            print("✅ All bots stopped successfully")
+        
         sys.exit(0)
     
     def run(self) -> None:

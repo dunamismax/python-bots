@@ -1,4 +1,4 @@
-discord.py>=2.5.2
+discord.py@ file:///Users/sawyer/github/python-bots/discord.py
 httpx>=0.28.1
 pydantic-settings>=2.10.1
 structlog>=25.4.0

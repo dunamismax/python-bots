@@ -65,12 +65,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Sync all dependencies and set up workspace
 uv sync
 
-# Set up development environment
-./bin/python-bots setup
-
 # Copy environment template and add your tokens
 cp env.example .env
 # Edit .env with your Discord bot tokens and configuration
+
+# Start all three bots at once
+./start-all-bots.sh
 ```
 
 ### Configuration
@@ -96,16 +96,22 @@ COMMAND_PREFIX=!
 
 ### Running Bots
 
+#### Start All Bots (Recommended)
 ```bash
-# Run all bots in development mode
-./bin/python-bots dev
+# Start all three bots concurrently with one command
+./start-all-bots.sh
 
-# Run specific bots
-./bin/python-bots run clippy        # Clippy bot only
-./bin/python-bots run music         # Music bot only  
-./bin/python-bots run mtg-card-bot  # MTG Card bot only
+# This script will:
+# - Validate environment variables are set
+# - Sync all dependencies  
+# - Start all three bots in parallel
+# - Display logs with prefixes [CLIPPY], [MTG], [MUSIC]
+# - Handle graceful shutdown with Ctrl+C
+```
 
-# Alternative: Run bots directly with uv
+#### Run Individual Bots
+```bash
+# Run specific bots individually
 uv run --package clippy-bot python -m clippy
 uv run --package mtg-card-bot python -m mtg_card_bot
 uv run --package music-bot python -m music

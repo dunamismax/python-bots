@@ -10,4 +10,4 @@ bots/*/.env
 
 # IDE
 .idea/
-.vscode/
+.vscode/*.pid

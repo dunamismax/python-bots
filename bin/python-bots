@@ -1,0 +1,361 @@
+#!/usr/bin/env python3
+"""
+Python Discord Bots Management Script
+
+This script replaces the functionality of magefile.go for Python-based bots.
+"""
+
+import argparse
+import asyncio
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+class BotManager:
+    """Manager for Python Discord bots."""
+    
+    def __init__(self):
+        self.root_dir = Path(__file__).parent.parent
+        self.bots_dir = self.root_dir / "bots"
+        self.shared_lib_dir = self.root_dir / "shared_lib"
+        self.bin_dir = self.root_dir / "bin"
+        
+        # Available bots
+        self.bots = ["clippy", "mtg-card-bot", "music"]
+    
+    def load_env_file(self) -> None:
+        """Load environment variables from .env file if it exists."""
+        env_file = self.root_dir / ".env"
+        if env_file.exists():
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        key = key.strip()
+                        value = value.strip().strip('"').strip("'")
+                        if key not in os.environ:
+                            os.environ[key] = value
+    
+    def run_command(self, cmd: list[str], cwd: Path = None, check: bool = True) -> subprocess.CompletedProcess:
+        """Run a command with proper error handling."""
+        cwd = cwd or self.root_dir
+        print(f"Running: {' '.join(cmd)}")
+        try:
+            return subprocess.run(cmd, cwd=cwd, check=check, capture_output=False)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed with exit code {e.returncode}")
+            sys.exit(e.returncode)
+    
+    def setup(self) -> None:
+        """Set up development environment."""
+        print("Setting up Python Discord Bots development environment...")
+        
+        # Check if uv is available
+        try:
+            subprocess.run(["uv", "--version"], check=True, capture_output=True)
+            print("✓ uv is available")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("❌ uv not found. Please install uv first:")
+            print("   curl -LsSf https://astral.sh/uv/install.sh | sh")
+            sys.exit(1)
+        
+        # Sync workspace dependencies
+        print("Installing all dependencies with uv sync...")
+        self.run_command(["uv", "sync"])
+        
+        # Verify bot packages
+        for bot in self.bots:
+            bot_dir = self.bots_dir / bot
+            if bot_dir.exists():
+                print(f"✓ {bot} bot found and configured")
+        
+        # Create example .env file if it doesn't exist
+        env_file = self.root_dir / ".env"
+        if not env_file.exists():
+            print("Creating example .env file...")
+            env_content = """# Discord Bot Framework Environment Variables
+
+# Global settings (applies to all bots unless overridden)
+COMMAND_PREFIX=!
+LOG_LEVEL=info
+JSON_LOGGING=false
+DEBUG=false
+
+# Guild ID (can be overridden per bot)
+GUILD_ID=your_guild_id_for_testing
+
+# Timeout configurations
+SHUTDOWN_TIMEOUT=30
+REQUEST_TIMEOUT=30
+MAX_RETRIES=3
+
+# Clippy Bot Configuration
+CLIPPY_DISCORD_TOKEN=your_clippy_bot_token_here
+CLIPPY_GUILD_ID=your_guild_id_for_testing
+RANDOM_RESPONSES=true
+RANDOM_INTERVAL=2700
+RANDOM_MESSAGE_DELAY=3
+
+# Music Bot Configuration  
+MUSIC_DISCORD_TOKEN=your_music_bot_token_here
+MUSIC_GUILD_ID=your_guild_id_for_testing
+MUSIC_DATABASE_URL=music.db
+MAX_QUEUE_SIZE=100
+INACTIVITY_TIMEOUT=300
+VOLUME_LEVEL=0.5
+
+# MTG Card Bot Configuration
+MTG_DISCORD_TOKEN=your_mtg_bot_token_here
+CACHE_TTL=3600
+CACHE_SIZE=1000
+"""
+            with open(env_file, "w") as f:
+                f.write(env_content)
+            print(f"Created {env_file}")
+        
+        print("Setup complete!")
+        print("Next steps:")
+        print("   • Edit .env file with your Discord bot tokens")
+        print("   • For music bot: ensure yt-dlp and FFmpeg are installed")
+        print("   • Run './bin/python-bots dev' to start development")
+        print("   • Run './bin/python-bots run <bot>' to start a specific bot")
+    
+    def dev(self) -> None:
+        """Run all bots in development mode with debug logging."""
+        self.load_env_file()
+        print("Starting all bots in development mode...")
+        
+        # Set debug environment
+        os.environ["DEBUG"] = "true"
+        os.environ["LOG_LEVEL"] = "debug"
+        
+        # Run all bots (this would typically use a process manager)
+        print("Development mode: Would start all bots with auto-restart")
+        print("Implementation needed: Use supervisor or similar for process management")
+    
+    def run_bot(self, bot_name: str) -> None:
+        """Run a specific bot."""
+        if bot_name not in self.bots:
+            print(f"Unknown bot: {bot_name}")
+            print(f"Available bots: {', '.join(self.bots)}")
+            sys.exit(1)
+        
+        self.load_env_file()
+        bot_dir = self.bots_dir / bot_name
+        
+        if not bot_dir.exists():
+            print(f"Bot directory not found: {bot_dir}")
+            sys.exit(1)
+        
+        print(f"Starting {bot_name} bot...")
+        
+        # Map bot names to package names
+        package_map = {
+            "clippy": "clippy-bot",
+            "mtg-card-bot": "mtg-card-bot", 
+            "music": "music-bot"
+        }
+        
+        # Map bot names to module names
+        module_map = {
+            "clippy": "clippy",
+            "mtg-card-bot": "mtg_card_bot",
+            "music": "music"
+        }
+        
+        package_name = package_map[bot_name]
+        module_name = module_map[bot_name]
+        
+        self.run_command(["uv", "run", "--package", package_name, "python", "-m", module_name])
+    
+    def build(self) -> None:
+        """Build all bot applications."""
+        print("Building all Discord bot applications...")
+        
+        # Sync workspace which handles all packages
+        print("Syncing workspace dependencies...")
+        self.run_command(["uv", "sync"])
+        
+        # Verify each bot is buildable
+        for bot in self.bots:
+            bot_dir = self.bots_dir / bot
+            if bot_dir.exists():
+                print(f"✓ {bot} bot ready for deployment")
+        
+        print("All builds completed successfully!")
+    
+    def clean(self) -> None:
+        """Clean build artifacts and temporary files."""
+        print("Cleaning up...")
+        
+        # Remove Python cache files
+        for cache_dir in self.root_dir.rglob("__pycache__"):
+            print(f"Removing {cache_dir}")
+            self.run_command(["rm", "-rf", str(cache_dir)], check=False)
+        
+        for pyc_file in self.root_dir.rglob("*.pyc"):
+            print(f"Removing {pyc_file}")
+            pyc_file.unlink()
+        
+        # Remove any SQLite databases created during testing
+        databases = ["music.db", "clippy.db", "bot.db"]
+        for db in databases:
+            db_path = self.root_dir / db
+            if db_path.exists():
+                print(f"Removing database file: {db}")
+                db_path.unlink()
+        
+        print("Clean complete!")
+    
+    def reset(self) -> None:
+        """Reset repository to clean state."""
+        print("Resetting repository to clean state...")
+        
+        # First run clean
+        self.clean()
+        
+        # Remove log files
+        print("Removing log files...")
+        log_files = ["bot.log", "clippy.log", "music.log", "discord.log"]
+        for log_file in log_files:
+            log_path = self.root_dir / log_file
+            if log_path.exists():
+                print(f"Removed log file: {log_file}")
+                log_path.unlink()
+        
+        print("Reset complete! Repository is now in fresh state.")
+        print("You can now run './bin/python-bots dev' to start the bots.")
+    
+    def format_code(self) -> None:
+        """Format code using ruff."""
+        print("Formatting code with ruff...")
+        try:
+            self.run_command(["uv", "tool", "run", "ruff", "format", "."])
+        except subprocess.CalledProcessError:
+            print("ruff not found, installing...")
+            self.run_command(["uv", "tool", "install", "ruff"])
+            self.run_command(["uv", "tool", "run", "ruff", "format", "."])
+    
+    def lint(self) -> None:
+        """Run comprehensive linting with ruff."""
+        print("Running ruff linting...")
+        try:
+            self.run_command(["uv", "tool", "run", "ruff", "check", "."])
+        except subprocess.CalledProcessError:
+            print("ruff not found, installing...")
+            self.run_command(["uv", "tool", "install", "ruff"])
+            self.run_command(["uv", "tool", "run", "ruff", "check", "."])
+    
+    def typecheck(self) -> None:
+        """Run type checking with mypy."""
+        print("Running mypy type checking...")
+        try:
+            self.run_command(["uv", "tool", "run", "mypy", "."])
+        except subprocess.CalledProcessError:
+            print("mypy not found, installing...")
+            self.run_command(["uv", "tool", "install", "mypy"])
+            self.run_command(["uv", "tool", "run", "mypy", "."])
+    
+    def test(self) -> None:
+        """Run the test suite."""
+        print("Running test suite...")
+        try:
+            self.run_command(["uv", "tool", "run", "pytest", "."])
+        except subprocess.CalledProcessError:
+            print("pytest not found, installing...")
+            self.run_command(["uv", "tool", "install", "pytest"])
+            self.run_command(["uv", "tool", "run", "pytest", "."])
+    
+    def quality(self) -> None:
+        """Run all quality checks."""
+        print("Running all quality checks...")
+        self.format_code()
+        self.lint()
+        self.typecheck()
+    
+    def ci(self) -> None:
+        """Run complete CI pipeline."""
+        print("Running complete CI pipeline...")
+        self.format_code()
+        self.lint()
+        self.typecheck()
+        self.test()
+        self.build()
+    
+    def help(self) -> None:
+        """Show help message."""
+        help_text = """
+Python Discord Bot Framework Management Script
+
+Available commands:
+
+Development:
+  setup              Install all development tools and dependencies
+  dev                Build and run all bots in development mode (with debug)
+  run <bot>          Build and run a specific bot (clippy, mtg-card-bot, music)
+  build              Build all bot applications
+
+Quality:
+  format             Format code with ruff
+  lint               Run ruff comprehensive linting
+  typecheck          Run mypy type checking
+  test               Run test suite
+  quality            Run all quality checks (format + lint + typecheck)
+
+Production:
+  ci                 Complete CI pipeline (format + lint + typecheck + test + build)
+  clean              Clean build artifacts and temporary files
+  reset              Reset repository to fresh state (clean + remove logs/databases)
+
+Other:
+  help               Show this help message
+
+Bot Commands (when running):
+  <bot_name>         Run specific bot (clippy, mtg-card-bot, music)
+"""
+        print(help_text)
+
+
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(description="Python Discord Bots Management")
+    parser.add_argument("command", help="Command to run")
+    parser.add_argument("args", nargs="*", help="Additional arguments")
+    
+    args = parser.parse_args()
+    manager = BotManager()
+    
+    # Map commands to methods
+    commands = {
+        "setup": manager.setup,
+        "dev": manager.dev,
+        "build": manager.build,
+        "clean": manager.clean,
+        "reset": manager.reset,
+        "format": manager.format_code,
+        "lint": manager.lint,
+        "typecheck": manager.typecheck,
+        "test": manager.test,
+        "quality": manager.quality,
+        "ci": manager.ci,
+        "help": manager.help,
+    }
+    
+    if args.command == "run":
+        if not args.args:
+            print("Please specify a bot to run: clippy, mtg-card-bot, or music")
+            sys.exit(1)
+        manager.run_bot(args.args[0])
+    elif args.command in commands:
+        commands[args.command]()
+    else:
+        print(f"Unknown command: {args.command}")
+        manager.help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

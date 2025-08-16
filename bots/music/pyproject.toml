@@ -1,0 +1,162 @@
+[project]
+name = "music-bot"
+version = "1.0.0"
+description = "Discord music bot with yt-dlp integration and queue management"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Sawyer", email = "sawyer@example.com"}
+]
+keywords = ["discord", "bot", "music", "yt-dlp", "audio"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "discord.py>=2.5.2",
+    "aiohttp>=3.12.15",
+    "yt-dlp>=2025.8.11",
+    "PyNaCl>=1.5.0",  # For voice support
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "structlog>=25.4.0",
+    "httpx>=0.28.1",
+    "aiosqlite>=0.21.0",
+    "python-dotenv>=1.1.1",
+    "typing-inspection>=0.4.1",
+    "prometheus-client>=0.22.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "black>=25.1.0",
+    "ruff>=0.12.9",
+    "mypy>=1.17.1",
+    "pre-commit>=4.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sawyer/python-bots"
+Repository = "https://github.com/sawyer/python-bots.git"
+Documentation = "https://github.com/sawyer/python-bots/blob/main/README.md"
+Issues = "https://github.com/sawyer/python-bots/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/music"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+
+
+[tool.uv.scripts]
+music-bot = "python src/music/__main__.py"
+dev = "python src/music/__main__.py"
+test = "pytest tests/"
+lint = "ruff check src/ tests/"
+format = "black src/ tests/"
+typecheck = "mypy src/"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.ruff_cache
+  | \.venv
+  | __pycache__
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Enable important linting rules
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+# Ignore specific rules that might be too strict
+ignore = [
+    "E501",  # Line too long (let black handle this)
+    "B008",  # Do not perform function calls in argument defaults
+    "C901",  # Function is too complex
+]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+split-on-trailing-comma = false
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "discord.*",
+    "aiohttp.*",
+    "yt_dlp.*",
+    "opuslib.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

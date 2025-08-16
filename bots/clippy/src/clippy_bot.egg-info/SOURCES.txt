@@ -1,0 +1,10 @@
+pyproject.toml
+src/clippy/__init__.py
+src/clippy/__main__.py
+src/clippy/bot.py
+src/clippy/quotes.py
+src/clippy_bot.egg-info/PKG-INFO
+src/clippy_bot.egg-info/SOURCES.txt
+src/clippy_bot.egg-info/dependency_links.txt
+src/clippy_bot.egg-info/requires.txt
+src/clippy_bot.egg-info/top_level.txt

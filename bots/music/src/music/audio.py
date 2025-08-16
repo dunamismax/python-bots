@@ -8,10 +8,7 @@ from typing import Dict, Optional
 
 import discord
 
-# Add shared_lib to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "shared_lib" / "src"))
-
-from shared import logging
+from . import logging
 
 from .models import Song
 
@@ -68,13 +65,25 @@ class AudioPlayer:
             def after_playing(error):
                 if error:
                     self.logger.error("Audio playback error", error=str(error))
+                else:
+                    self.logger.debug("Song playback completed", guild_id=guild_id)
                 
                 # Schedule next song in event loop
-                asyncio.run_coroutine_threadsafe(
-                    self._handle_song_finished(bot, guild_id, voice_client, queue),
-                    bot.loop
-                )
+                try:
+                    asyncio.run_coroutine_threadsafe(
+                        self._handle_song_finished(bot, guild_id, voice_client, queue),
+                        bot.loop
+                    )
+                except Exception as e:
+                    self.logger.error("Error scheduling next song", error=str(e))
 
+            # Check voice client is still connected before playing
+            if not voice_client.is_connected():
+                self.logger.error("Voice client not connected, cannot play audio")
+                queue.set_current(None)
+                queue.set_playing(False)
+                return
+                
             voice_client.play(audio_source, after=after_playing)
             
         except Exception as e:
@@ -89,6 +98,16 @@ class AudioPlayer:
     async def _handle_song_finished(self, bot, guild_id: str, voice_client: discord.VoiceClient, queue) -> None:
         """Handle when a song finishes playing."""
         self.logger.debug("Song finished", guild_id=guild_id)
+        
+        # Check if voice client is still connected
+        if not voice_client.is_connected():
+            self.logger.warning("Voice client disconnected, stopping playback", guild_id=guild_id)
+            queue.set_current(None)
+            queue.set_playing(False)
+            # Clean up the voice connection from bot's tracking
+            if hasattr(bot, 'voice_connections') and guild_id in bot.voice_connections:
+                del bot.voice_connections[guild_id]
+            return
         
         # Clear current song
         queue.set_current(None)
@@ -113,20 +132,16 @@ class AudioPlayer:
             # Get volume for this guild
             volume = self.get_volume(guild_id)
             
-            # Use yt-dlp to stream the audio
-            ytdl_opts = {
-                "format": "bestaudio[ext=m4a]/bestaudio/best",
-                "noplaylist": True,
-                "quiet": True,
-                "no_warnings": True,
-            }
-            
+            # FFmpeg options optimized for streaming stability
             ffmpeg_options = {
-                "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                "options": "-vn"
+                "before_options": (
+                    "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 "
+                    "-http_persistent false -multiple_requests 1"
+                ),
+                "options": "-vn -loglevel error"
             }
             
-            # Create the audio source
+            # Create the audio source directly from the URL
             source = discord.FFmpegPCMAudio(
                 song.url,
                 **ffmpeg_options
@@ -158,6 +173,7 @@ class AudioPlayer:
             # Allow known safe domains for audio
             safe_domains = [
                 'youtube.com', 'youtu.be', 'music.youtube.com',
+                'googlevideo.com',  # YouTube's actual streaming URLs
                 'soundcloud.com', 'spotify.com', 'bandcamp.com',
                 'vimeo.com', 'twitch.tv'
             ]

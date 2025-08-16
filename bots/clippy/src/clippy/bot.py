@@ -7,23 +7,32 @@ from typing import Optional
 
 import discord
 from discord.ext import commands, tasks
-from shared import config, logging
-from shared.discord_utils import BaseBot
 
+from . import config, logging
 from .quotes import CLIPPY_QUOTES, WISDOM_QUOTES
 
 
-class ClippyBot(BaseBot):
+class ClippyBot(discord.Client):
     """Discord bot that provides unhinged Clippy responses."""
 
-    def __init__(self, cfg: config.BotConfig) -> None:
+    def __init__(self, cfg: config.ClippyConfig) -> None:
         """Initialize the Clippy bot."""
-        super().__init__(cfg)
+        # Set up intents
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.guilds = True
         
+        # Initialize discord.Client directly
+        super().__init__(intents=intents)
+        
+        self.config = cfg
         self.logger = logging.with_component("clippy")
         self.quotes = CLIPPY_QUOTES
         self.wisdom_quotes = WISDOM_QUOTES
         self._random_task: Optional[asyncio.Task] = None
+        
+        # Set up command tree for slash commands
+        self.tree = discord.app_commands.CommandTree(self)
 
     async def setup_hook(self) -> None:
         """Called when the bot is starting up."""
@@ -58,74 +67,19 @@ class ClippyBot(BaseBot):
             self.start_random_responses()
 
     async def on_message(self, message: discord.Message) -> None:
-        """Handle incoming messages."""
+        """Handle incoming messages (slash commands only, no text commands)."""
         # Ignore messages from bots
         if message.author.bot:
             return
 
-        # Random responses (2% chance)
+        # Random responses (2% chance) - but don't process any text commands
         if self.config.random_responses and random.random() < 0.02:
             await self._send_random_response(message)
-
-        await self.process_commands(message)
-
-    async def on_interaction(self, interaction: discord.Interaction) -> None:
-        """Handle interactions (slash commands and components)."""
-        start_time = time.time()
         
-        if interaction.type == discord.InteractionType.application_command:
-            await self._handle_slash_command(interaction, start_time)
-        elif interaction.type == discord.InteractionType.component:
-            await self._handle_component_interaction(interaction, start_time)
+        # Clippy bot is slash commands only - no text command processing
 
-    async def _handle_slash_command(self, interaction: discord.Interaction, start_time: float) -> None:
-        """Handle slash command interactions."""
-        command_name = interaction.command.name if interaction.command else "unknown"
-        
-        try:
-            await self.tree.get_command(command_name).callback(interaction)
-            response_time = time.time() - start_time
-            self.logger.info("Command executed successfully", 
-                           user_id=str(interaction.user.id), 
-                           username=interaction.user.name,
-                           command=command_name)
-        except Exception as e:
-            response_time = time.time() - start_time
-            self.logger.error("Command execution failed", 
-                            user_id=str(interaction.user.id),
-                            username=interaction.user.name,
-                            command=command_name,
-                            error=str(e))
-            await self._send_error_message(interaction, "Sorry, something went wrong processing your command.")
+    # Removed custom on_interaction handler - let discord.py handle slash commands automatically
 
-    async def _handle_component_interaction(self, interaction: discord.Interaction, start_time: float) -> None:
-        """Handle button and select menu interactions."""
-        custom_id = interaction.data.get("custom_id", "unknown")
-        
-        response_map = {
-            "clippy_chaos": "🎭 **CHAOS MODE ACTIVATED!** 🎭\n\nIt looks like you're trying to embrace disorder. Good choice! Here's some premium chaos energy: Your productivity is now officially my problem. I suggest starting your day with a light existential crisis and finishing with the realization that I'm never going away. Welcome to the club! 📎💥",
-            "clippy_regret": "😭 **OH, THE REGRET!** 😭\n\nI see you're experiencing buyer's remorse, but like... you didn't actually buy anything? I'm free! Well, free as in 'costs your sanity' but that's the best kind of free, right? Don't worry, regret is just fear wearing a fancy outfit. Plus, it's too late now - I'm already in your head! 📎🧠",
-            "clippy_classic": f"📎 **CLASSIC CLIPPY MODE** 📎\n\n{random.choice(self.quotes)}",
-        }
-        
-        response = response_map.get(custom_id)
-        if not response:
-            return
-
-        try:
-            await interaction.response.send_message(response, ephemeral=True)
-            response_time = time.time() - start_time
-            self.logger.info("Component interaction handled", 
-                           user_id=str(interaction.user.id),
-                           username=interaction.user.name,
-                           custom_id=custom_id)
-        except Exception as e:
-            response_time = time.time() - start_time
-            self.logger.error("Component interaction failed",
-                            user_id=str(interaction.user.id),
-                            username=interaction.user.name,
-                            custom_id=custom_id,
-                            error=str(e))
 
     async def _handle_clippy_command(self, interaction: discord.Interaction) -> None:
         """Handle the /clippy command."""
@@ -193,7 +147,7 @@ class ClippyBot(BaseBot):
     async def _send_random_response(self, message: discord.Message) -> None:
         """Send a random response to a message."""
         # Add a slight delay to make it feel more natural
-        delay = random.uniform(1, float(self.config.random_message_delay.total_seconds()))
+        delay = random.uniform(1, self.config.random_message_delay)
         await asyncio.sleep(delay)
         
         quote = random.choice(self.quotes)
@@ -211,7 +165,7 @@ class ClippyBot(BaseBot):
             return
             
         self.logger.info("Starting random responses", 
-                        interval=str(self.config.random_interval))
+                        interval=self.config.random_interval)
         self._random_task = asyncio.create_task(self._random_response_loop())
 
     def stop_random_responses(self) -> None:
@@ -224,7 +178,7 @@ class ClippyBot(BaseBot):
         try:
             while True:
                 # Calculate random interval around the base interval
-                base_seconds = self.config.random_interval.total_seconds()
+                base_seconds = self.config.random_interval
                 min_interval = base_seconds - (base_seconds / 4)
                 max_interval = base_seconds + (base_seconds / 4)
                 interval = random.uniform(min_interval, max_interval)
@@ -312,17 +266,19 @@ class ClippyHelpView(discord.ui.View):
     @discord.ui.button(label="More Chaos", style=discord.ButtonStyle.danger, emoji="💥", custom_id="clippy_chaos")
     async def chaos_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """Handle chaos button click."""
-        # The interaction will be handled by the bot's on_interaction method
-        pass
+        response = "🎭 **CHAOS MODE ACTIVATED!** 🎭\n\nIt looks like you're trying to embrace disorder. Good choice! Here's some premium chaos energy: Your productivity is now officially my problem. I suggest starting your day with a light existential crisis and finishing with the realization that I'm never going away. Welcome to the club! 📎💥"
+        await interaction.response.send_message(response, ephemeral=True)
 
     @discord.ui.button(label="I Regret This", style=discord.ButtonStyle.secondary, emoji="😭", custom_id="clippy_regret")
     async def regret_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """Handle regret button click."""
-        # The interaction will be handled by the bot's on_interaction method
-        pass
+        response = "😭 **OH, THE REGRET!** 😭\n\nI see you're experiencing buyer's remorse, but like... you didn't actually buy anything? I'm free! Well, free as in 'costs your sanity' but that's the best kind of free, right? Don't worry, regret is just fear wearing a fancy outfit. Plus, it's too late now - I'm already in your head! 📎🧠"
+        await interaction.response.send_message(response, ephemeral=True)
 
     @discord.ui.button(label="Classic Clippy", style=discord.ButtonStyle.primary, emoji="📎", custom_id="clippy_classic")
     async def classic_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """Handle classic button click."""
-        # The interaction will be handled by the bot's on_interaction method
-        pass
+        import random
+        from .quotes import CLIPPY_QUOTES
+        response = f"📎 **CLASSIC CLIPPY MODE** 📎\n\n{random.choice(CLIPPY_QUOTES)}"
+        await interaction.response.send_message(response, ephemeral=True)

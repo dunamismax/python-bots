@@ -19,7 +19,7 @@ class BotManager:
     def __init__(self):
         self.root_dir = Path(__file__).parent.parent
         self.bots_dir = self.root_dir / "bots"
-        self.shared_lib_dir = self.root_dir / "shared_lib"
+        # shared_lib removed - each bot is now independent
         self.bin_dir = self.root_dir / "bin"
         
         # Available bots

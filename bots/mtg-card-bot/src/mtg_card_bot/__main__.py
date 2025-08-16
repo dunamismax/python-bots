@@ -5,8 +5,7 @@ import signal
 import sys
 from pathlib import Path
 
-from shared import config, logging
-
+from . import config, logging
 from .bot import MTGCardBot
 
 
@@ -19,7 +18,7 @@ async def main() -> None:
 
     # Load configuration
     try:
-        cfg = config.load_config(config.BotType.MTG)
+        cfg = config.load_config()
     except Exception as e:
         print(f"Failed to load configuration: {e}")
         sys.exit(1)
@@ -49,7 +48,7 @@ async def main() -> None:
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        await bot.start()
+        await bot.start(cfg.discord_token)
     except Exception as e:
         logger.error("Failed to start bot", error=str(e))
         sys.exit(1)

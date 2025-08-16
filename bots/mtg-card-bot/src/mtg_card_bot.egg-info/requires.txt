@@ -4,7 +4,6 @@ pydantic-settings>=2.10.1
 structlog>=25.4.0
 aiosqlite>=0.21.0
 pillow>=11.3.0
-shared
 
 [dev]
 ruff>=0.12.9

@@ -8,7 +8,6 @@ Requires-Dist: httpx>=0.28.1
 Requires-Dist: pydantic-settings>=2.10.1
 Requires-Dist: structlog>=25.4.0
 Requires-Dist: aiosqlite>=0.21.0
-Requires-Dist: shared
 Provides-Extra: dev
 Requires-Dist: ruff>=0.12.9; extra == "dev"
 Requires-Dist: mypy>=1.17.1; extra == "dev"

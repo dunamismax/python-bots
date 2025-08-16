@@ -10,7 +10,6 @@ dependencies = [
     "structlog>=25.4.0",
     "aiosqlite>=0.21.0",
     "pillow>=11.3.0",
-    "shared",
 ]
 
 [project.optional-dependencies]
@@ -28,8 +27,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.uv.sources]
-shared = { workspace = true }
 
 [tool.uv.scripts]
 run = "python -m mtg_card_bot"

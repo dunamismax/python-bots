@@ -32,10 +32,10 @@ A modern Discord bot monorepo written in Python, featuring three specialized bot
 
 **Architecture Highlights:**
 
-* **Monorepo Design** – Independent bots sharing common infrastructure
+* **Monorepo Design** – Independent bots with isolated dependencies
 * **Microservice Pattern** – Each bot is self-contained with clear domain boundaries
-* **Unified Configuration** – Shared environment-based configuration system with bot-specific overrides
-* **Shared Libraries** – Common patterns extracted to `shared_lib/` for maximum reuse
+* **Independent Configuration** – Each bot has its own configuration system and dependencies
+* **Interactive Management** – Smart CLI script for easy bot management and deployment
 * **Observability First** – Structured logging and performance monitoring built-in
 * **Modern Tooling** – uv package management, typed configuration, and async/await patterns
 * **Performance Optimized** – Async operations with intelligent caching
@@ -46,31 +46,30 @@ A modern Discord bot monorepo written in Python, featuring three specialized bot
 
 ### Prerequisites
 
-- **Python 3.12+** - Modern Python with latest async features
-- **uv** - Fast Python package manager ([Installation guide](https://docs.astral.sh/uv/getting-started/installation/))
+- **uv** - Fast Python package manager and runtime
 - **Discord Bot Token(s)** - Create applications at [Discord Developer Portal](https://discord.com/developers/applications)
-- **yt-dlp** - For music bot YouTube integration: `pip install yt-dlp`
 - **FFmpeg** - For music bot audio processing: [Download here](https://ffmpeg.org/download.html)
 
 ### Installation
 
 ```bash
-# Clone the repository
+# 1. Install uv (Python package manager)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Install Python 3.12 and set as global default
+uv python install 3.12
+uv python pin 3.12
+
+# 3. Clone the repository
 git clone https://github.com/dunamismax/python-bots.git
 cd python-bots
 
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Sync all dependencies and set up workspace
-uv sync
-
-# Copy environment template and add your tokens
+# 4. Copy environment template and add your tokens
 cp env.example .env
 # Edit .env with your Discord bot tokens and configuration
 
-# Start all three bots at once
-./start-all-bots.sh
+# 5. Start the interactive bot manager
+uv run python start_bots.py
 ```
 
 ### Configuration
@@ -96,22 +95,24 @@ COMMAND_PREFIX=!
 
 ### Running Bots
 
-#### Start All Bots (Recommended)
+#### Interactive Bot Manager (Recommended)
 ```bash
-# Start all three bots concurrently with one command
-./start-all-bots.sh
+# Start the interactive CLI bot manager
+uv run python start_bots.py
 
-# This script will:
+# This interactive script will:
+# - Scan and detect all available bots automatically
+# - Present a menu with arrow key navigation
+# - Allow you to start all bots or individual bots
 # - Validate environment variables are set
-# - Sync all dependencies  
-# - Start all three bots in parallel
-# - Display logs with prefixes [CLIPPY], [MTG], [MUSIC]
+# - Sync all dependencies automatically
+# - Display logs with bot-specific prefixes
 # - Handle graceful shutdown with Ctrl+C
 ```
 
-#### Run Individual Bots
+#### Manual Bot Execution
 ```bash
-# Run specific bots individually
+# Run specific bots individually (without interactive menu)
 uv run --package clippy-bot python -m clippy
 uv run --package mtg-card-bot python -m mtg_card_bot
 uv run --package music-bot python -m music
@@ -289,7 +290,7 @@ python-bots/
 
 * **Domain-Driven Design** – Each bot owns its domain logic completely
 * **Microservice Architecture** – Independent deployment and scaling capability
-* **Shared Infrastructure** – Common patterns extracted to `shared_lib/` for maximum reuse
+* **Independent Architecture** – Each bot is completely self-contained with isolated dependencies
 * **Modern Python** – Full type hints, async/await patterns, and pydantic configuration
 * **uv Package Management** – Fast, reliable dependency resolution and virtual environments
 * **Observability First** – Structured logging, metrics, and error tracking from day one
@@ -488,7 +489,7 @@ uv run ruff format .
 uv run ruff check .
 
 # Type checking
-uv run mypy shared_lib/ bots/
+uv run mypy bots/
 
 # Run tests
 uv run pytest

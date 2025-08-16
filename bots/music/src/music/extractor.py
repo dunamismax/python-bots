@@ -9,10 +9,7 @@ from typing import Any, Dict, Optional
 
 import yt_dlp
 
-# Add shared_lib to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "shared_lib" / "src"))
-
-from shared import errors, logging
+from . import errors, logging
 
 from .models import Song
 
@@ -24,21 +21,28 @@ class AudioExtractor:
         """Initialize the audio extractor."""
         self.logger = logging.with_component("audio_extractor")
         
-        # yt-dlp options optimized for Discord streaming
+        # yt-dlp options optimized for Discord streaming (2025 best practices)
         self.ytdl_opts = {
-            "format": "bestaudio[ext=m4a]/bestaudio/best[height<=?480]",
+            "format": "bestaudio[ext=m4a]/bestaudio/best",
             "noplaylist": True,
             "socket_timeout": 30,
             "retries": 3,
             "fragment_retries": 3,
             "extractor_retries": 2,
-            "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "geo_bypass": True,
-            "no_check_certificate": True,
+            "no_check_certificate": False,
             "prefer_free_formats": True,
             "extract_flat": False,
             "quiet": True,
             "no_warnings": True,
+            "http_chunk_size": 10485760,  # 10MB chunks for better streaming
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android", "web"],
+                    "player_skip": ["webpage"]
+                }
+            }
         }
 
     async def extract_song_info(self, query: str) -> Song:

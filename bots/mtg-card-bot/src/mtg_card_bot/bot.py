@@ -4,14 +4,15 @@ import asyncio
 import io
 import re
 import time
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import discord
 import httpx
-from discord.ext import commands
-
 from . import config, errors, logging
+
+
+
 from .cache import CardCache
 from .scryfall import Card, ScryfallClient
 
@@ -32,15 +33,11 @@ class MTGCardBot(discord.Client):
 
     def __init__(self, cfg: config.MTGConfig) -> None:
         """Initialize the MTG Card Bot."""
-        # Set up intents
         intents = discord.Intents.default()
         intents.message_content = True
-        intents.guilds = True
-        
-        # Initialize discord.Client directly
         super().__init__(intents=intents)
-        
         self.config = cfg
+
         self.logger = logging.with_component("mtg_card_bot")
         self.scryfall_client = ScryfallClient()
         self.cache = CardCache(
@@ -48,7 +45,17 @@ class MTGCardBot(discord.Client):
             max_size=cfg.cache_size
         )
         self.http_client = httpx.AsyncClient(timeout=20.0)
-        self._last_message_time = {}  # Track last message time per user/channel
+        
+        # Duplicate suppression structures
+        # Track recent (author, normalized_content) to timestamp
+        self._recent_commands: Dict[tuple[int, str], float] = {}
+        # Track processed Discord message IDs
+        self._processed_message_ids: set[int] = set()
+
+    async def start(self) -> None:
+        # Prefer static token from config; support multiple field names
+        token = getattr(self.config, "token", None) or getattr(self.config, "discord_token", "")
+        await super().start(token)
 
     async def setup_hook(self) -> None:
         """Called when the bot is starting up."""
@@ -63,69 +70,51 @@ class MTGCardBot(discord.Client):
         # Ignore messages from bots
         if message.author.bot:
             return
+        
+        # If we've already processed this message (duplicate delivery), skip
+        if message.id in self._processed_message_ids:
+            return
 
         # Check if message starts with command prefix
         if not message.content.startswith(self.config.command_prefix):
             return
 
-        # Prevent rapid duplicate processing from same user/channel
-        import time
-        user_channel_key = f"{message.author.id}_{message.channel.id}_{message.content}"
-        current_time = time.time()
+        # Remove prefix
+        content = message.content[len(self.config.command_prefix):]
         
-        if user_channel_key in self._last_message_time:
-            time_diff = current_time - self._last_message_time[user_channel_key]
-            if time_diff < 1.0:  # Prevent duplicates within 1 second
-                self.logger.debug("Skipping rapid duplicate message", 
-                                user_id=message.author.id, 
-                                time_diff=time_diff)
-                return
+        # Suppress duplicate commands from the same user/content within a short window
+        normalized = " ".join(content.lower().split())
+        key = (message.author.id, normalized)
+        now = time.time()
+        last = self._recent_commands.get(key)
+        if last is not None and (now - last) < 1.5:
+            return
+        self._recent_commands[key] = now
+        self._processed_message_ids.add(message.id)
         
-        self._last_message_time[user_channel_key] = current_time
-        self.logger.debug("Processing message", 
-                        message_id=message.id, 
-                        user_id=message.author.id,
-                        content=message.content[:50])
-        
-        try:
-            # Remove prefix
-            content = message.content[len(self.config.command_prefix):]
-        
-            # If the content contains semicolons, treat as multi-card lookup
-            if ";" in content:
-                await self._handle_multi_card_lookup(message, content)
-                return
+        # If the content contains semicolons, treat as multi-card lookup
+        if ";" in content:
+            await self._handle_multi_card_lookup(message, content)
+            return
 
-            parts = content.split()
-            if not parts:
-                return
+        parts = content.split()
+        if not parts:
+            return
 
-            command = parts[0].lower()
-            args = parts[1:]
+        command = parts[0].lower()
+        args = parts[1:]
 
-            # Handle specific commands
-            if command == "random":
-                await self._handle_random_card(message)
-            elif command == "help":
-                await self._handle_help(message)
-            elif command == "cache":
-                await self._handle_cache_stats(message)
-            else:
-                # Treat as card lookup
-                card_query = " ".join(parts)
-                await self._handle_card_lookup(message, card_query)
-        except Exception as e:
-            self.logger.error("Error processing message", 
-                            message_id=message.id, 
-                            error=str(e))
-        finally:
-            # Clean up old message times to prevent memory growth
-            if len(self._last_message_time) > 1000:
-                # Remove entries older than 5 minutes
-                cutoff_time = current_time - 300
-                keys_to_remove = [k for k, v in self._last_message_time.items() if v < cutoff_time]
-                for key in keys_to_remove:
-                    del self._last_message_time[key]
+        # Handle specific commands
+        if command == "random":
+            await self._handle_random_card(message)
+        elif command == "help":
+            await self._handle_help(message)
+        elif command == "cache":
+            await self._handle_cache_stats(message)
+        else:
+            # Treat as card lookup
+            card_query = " ".join(parts)
+            await self._handle_card_lookup(message, card_query)
 
     async def _handle_random_card(self, message: discord.Message) -> None:
         """Handle the random card command."""
@@ -585,11 +574,11 @@ class MTGCardBot(discord.Client):
         try:
             await self.scryfall_client.close()
         except Exception as e:
-            self.logger.error("Error closing scryfall client", error=str(e))
+            self.logger.warning("Error closing scryfall client", error=str(e))
         
         try:
             await self.http_client.aclose()
         except Exception as e:
-            self.logger.error("Error closing http client", error=str(e))
-            
+            self.logger.warning("Error closing http client", error=str(e))
+        
         await super().close()

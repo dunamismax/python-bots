@@ -13,8 +13,7 @@
   <a href="https://github.com/Rapptz/discord.py"><img src="https://img.shields.io/badge/Discord-discord.py-5865F2.svg?logo=discord&logoColor=white" alt="discord.py"></a>
   <a href="https://scryfall.com/docs/api"><img src="https://img.shields.io/badge/API-Scryfall-FF6B35.svg" alt="Scryfall API"></a>
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/badge/Package-uv-purple.svg" alt="uv"></a>
-  <a href="https://www.structlog.org/"><img src="https://img.shields.io/badge/Logging-structlog-3776AB.svg" alt="structlog"></a>
-  <a href="https://docs.pydantic.dev/"><img src="https://img.shields.io/badge/Config-Pydantic-E92063.svg" alt="Pydantic"></a>
+  <a href="https://ffmpeg.org/"><img src="https://img.shields.io/badge/FFmpeg-required-007808.svg" alt="FFmpeg"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
 </p>
 
@@ -22,7 +21,7 @@
 
 ## About
 
-A modern Discord bot monorepo written in Python, featuring three specialized bots with shared infrastructure. Showcases enterprise-grade architecture, microservice patterns, and 2025 best practices for Discord bot development using modern Python tooling.
+A modern Discord bot monorepo with three independent bots. Each bot is self-contained with its own code and configuration—no shared package.
 
 **Bot Collection:**
 
@@ -30,15 +29,12 @@ A modern Discord bot monorepo written in Python, featuring three specialized bot
 * **Clippy Bot** – Unhinged AI persona with interactive slash commands and button components  
 * **Music Bot** – Full-featured audio playback with queue management and YouTube integration
 
-**Architecture Highlights:**
+**Highlights:**
 
-* **Monorepo Design** – Independent bots with isolated dependencies
-* **Microservice Pattern** – Each bot is self-contained with clear domain boundaries
-* **Independent Configuration** – Each bot has its own configuration system and dependencies
-* **Interactive Management** – Smart CLI script for easy bot management and deployment
-* **Observability First** – Structured logging and performance monitoring built-in
-* **Modern Tooling** – uv package management, typed configuration, and async/await patterns
-* **Performance Optimized** – Async operations with intelligent caching
+- Independent per-bot code and config (no shared module)
+- Simple .env configuration per bot
+- Interactive launcher (`start_bots.py`) or run bots individually
+- Async I/O and lightweight logging
 
 ---
 
@@ -66,7 +62,7 @@ cd python-bots
 
 # 4. Copy environment template and add your tokens
 cp env.example .env
-# Edit .env with your Discord bot tokens and configuration
+# Edit .env with your bot tokens
 
 # 5. Start the interactive bot manager
 uv run python start_bots.py
@@ -74,23 +70,25 @@ uv run python start_bots.py
 
 ### Configuration
 
-Edit `.env` file with your Discord bot tokens:
+Edit `.env` with your tokens (minimal example):
 
 ```bash
-# Required: Add your Discord bot tokens
-CLIPPY_DISCORD_TOKEN=your_clippy_bot_token_here
-MUSIC_DISCORD_TOKEN=your_music_bot_token_here
-MTG_DISCORD_TOKEN=your_mtg_bot_token_here
+CLIPPY_DISCORD_TOKEN=...
+MUSIC_DISCORD_TOKEN=...
+MTG_DISCORD_TOKEN=...
 
-# Optional: Guild ID for slash command testing
-CLIPPY_GUILD_ID=your_guild_id_for_testing
-MUSIC_GUILD_ID=your_guild_id_for_testing
-MTG_GUILD_ID=your_guild_id_for_testing
-
-# Optional: Customize behavior
+# Optional
 LOG_LEVEL=info
 DEBUG=false
-COMMAND_PREFIX=!
+
+# Music bot (optional overrides)
+MUSIC_MAX_QUEUE_SIZE=100
+MUSIC_INACTIVITY_TIMEOUT=300
+MUSIC_VOLUME_LEVEL=0.5
+
+# MTG bot (optional overrides)
+MTG_CACHE_TTL=3600
+MTG_CACHE_SIZE=1000
 ```
 
 ### Running Bots
@@ -112,7 +110,7 @@ uv run python start_bots.py
 
 #### Manual Bot Execution
 ```bash
-# Run specific bots individually (without interactive menu)
+# Run bots individually (without the menu)
 uv run --package clippy-bot python -m clippy
 uv run --package mtg-card-bot python -m mtg_card_bot
 uv run --package music-bot python -m music
@@ -120,27 +118,11 @@ uv run --package music-bot python -m music
 
 ---
 
-## 🔧 Development Commands
+## 🔧 Development
 
-```bash
-# Development Setup
-./bin/python-bots setup         # Install dependencies and create configs
-./bin/python-bots dev           # Run all bots with debug logging
-./bin/python-bots run <bot>     # Run specific bot (clippy, mtg-card-bot, music)
-
-# Code Quality
-./bin/python-bots format        # Format code with ruff
-./bin/python-bots lint          # Lint code with ruff and mypy
-./bin/python-bots typecheck     # Type checking with mypy
-./bin/python-bots test          # Run test suite
-./bin/python-bots quality       # Run all quality checks
-./bin/python-bots ci            # Complete CI pipeline
-
-# Project Management
-./bin/python-bots clean         # Clean build artifacts and caches
-./bin/python-bots reset         # Reset to fresh state
-./bin/python-bots build         # Build all applications for deployment
-```
+- Format: `uv run ruff format .`
+- Lint: `uv run ruff check .`
+- Types: `uv run mypy bots/`
 
 ---
 
@@ -150,7 +132,7 @@ uv run --package music-bot python -m music
 
 ## 🤖 Bot Commands & Features
 
-### MTG Card Bot - The Crown Jewel
+### MTG Card Bot
 
 Advanced Magic: The Gathering card lookup with fuzzy search and filtering.
 
@@ -175,15 +157,9 @@ Advanced Magic: The Gathering card lookup with fuzzy search and filtering.
 !cache                # Cache utilization stats
 ```
 
-**Features:**
-- Fuzzy name matching for typos
-- Advanced Scryfall API filtering
-- High-resolution card images
-- Multi-card grid display
-- Intelligent caching system
-- Performance metrics
+Features: fuzzy search, Scryfall filters, images, multi-card grids, caching.
 
-### Clippy Bot - Interactive Chaos
+### Clippy Bot
 
 Unhinged AI persona with modern Discord interactions.
 
@@ -199,15 +175,9 @@ Unhinged AI persona with modern Discord interactions.
 "Classic Clippy" button     # Random classic response
 ```
 
-**Features:**
-- 2% random response rate to any message
-- Periodic random messages (configurable timing)
-- Real-time performance tracking
-- Modern internet culture references
-- Interactive button components
-- Styled embeds with custom colors
+Features: slash commands, interactive buttons, optional random replies.
 
-### Music Bot - Full-Featured Audio
+### Music Bot
 
 Complete audio streaming solution with playlist management.
 
@@ -229,13 +199,7 @@ Complete audio streaming solution with playlist management.
 /playlist_play <id>        # Play entire playlist
 ```
 
-**Features:**
-- YouTube integration with yt-dlp
-- Persistent playlist database
-- Queue management system
-- Volume control and audio effects
-- Automatic disconnection on inactivity
-- Multi-server support with isolated queues
+Features: YouTube/yt-dlp integration, queue, volume control, auto-disconnect.
 
 ---
 
@@ -268,16 +232,7 @@ python-bots/
 │       │   ├── queue.py           # Queue management
 │       │   └── models.py          # Data models
 │       └── pyproject.toml         # Bot-specific dependencies
-├── shared_lib/                    # Shared library infrastructure
-│   ├── src/shared/                # Common modules
-│   │   ├── __init__.py            # Package initialization
-│   │   ├── config.py              # Unified configuration system
-│   │   ├── logging.py             # Structured logging with structlog
-│   │   ├── errors.py              # Typed error handling
-│   │   ├── discord_utils.py       # Discord utilities and base classes
-│   │   ├── security.py            # Security utilities and validation
-│   │   └── database.py            # Database operations with aiosqlite
-│   └── pyproject.toml             # Shared library dependencies
+├── start_bots.py                  # Interactive launcher for all bots
 ├── bin/                           # Management and utility scripts
 │   └── python-bots                # Main management script
 ├── .env.example                   # Environment configuration template
@@ -286,99 +241,23 @@ python-bots/
 └── uv.lock                        # Dependency lock file
 ```
 
-### Key Design Principles
+### Technology
 
-* **Domain-Driven Design** – Each bot owns its domain logic completely
-* **Microservice Architecture** – Independent deployment and scaling capability
-* **Independent Architecture** – Each bot is completely self-contained with isolated dependencies
-* **Modern Python** – Full type hints, async/await patterns, and pydantic configuration
-* **uv Package Management** – Fast, reliable dependency resolution and virtual environments
-* **Observability First** – Structured logging, metrics, and error tracking from day one
-* **Performance Optimized** – Async operations with intelligent caching and resource management
-
-### Technology Stack
-
-- **Python 3.12+** - Modern async/await syntax and performance improvements
-- **discord.py 2.5+** - Latest Discord API features and slash commands
-- **pydantic 2.0+** - Type-safe configuration and data validation
-- **structlog** - Structured logging with JSON output support
-- **httpx** - Modern async HTTP client for API calls
-- **aiosqlite** - Async SQLite database operations
-- **uv** - Fast Python package and project management
-- **ruff** - Fast Python linting and formatting
-- **mypy** - Static type checking
+- Python 3.12+
+- discord.py 2.5+
+- httpx (MTG only)
+- yt-dlp + FFmpeg (Music only)
+- uv, ruff, mypy
 
 ---
 
-## ⚙️ Configuration Options
+## ⚙️ Environment Variables (summary)
 
-### Environment Variables
-
-```bash
-# Global Settings (applies to all bots unless overridden)
-COMMAND_PREFIX=!                 # Default command prefix
-LOG_LEVEL=info                   # Logging level (debug, info, warn, error)
-JSON_LOGGING=false              # Enable JSON structured logging
-DEBUG=false                     # Enable debug mode
-GUILD_ID=your_guild_id          # Default guild for slash commands
-
-# Performance & Timeouts
-SHUTDOWN_TIMEOUT=30             # Graceful shutdown timeout (seconds)
-REQUEST_TIMEOUT=30              # HTTP request timeout (seconds)
-MAX_RETRIES=3                   # Maximum retry attempts for failed requests
-
-# Bot-Specific Tokens (required)
-CLIPPY_DISCORD_TOKEN=token      # Clippy bot token
-MUSIC_DISCORD_TOKEN=token       # Music bot token
-MTG_DISCORD_TOKEN=token         # MTG Card bot token
-
-# Bot-Specific Overrides (optional)
-CLIPPY_GUILD_ID=guild_id        # Override guild for Clippy
-MUSIC_GUILD_ID=guild_id         # Override guild for Music bot
-MTG_GUILD_ID=guild_id           # Override guild for MTG bot
-
-# Cache Configuration (MTG bot)
-CACHE_TTL=3600                  # Cache time-to-live in seconds
-CACHE_SIZE=1000                 # Maximum cached items
-
-# Music Bot Configuration
-MUSIC_DATABASE_URL=music.db     # Database file path
-MAX_QUEUE_SIZE=100              # Maximum songs in queue
-INACTIVITY_TIMEOUT=300          # Auto-disconnect timeout (seconds)
-VOLUME_LEVEL=0.5                # Default volume (0.0-1.0)
-
-# Clippy Bot Configuration
-RANDOM_RESPONSES=true           # Enable random responses
-RANDOM_INTERVAL=2700            # Random message interval (seconds)
-RANDOM_MESSAGE_DELAY=3          # Delay before random messages (seconds)
-```
-
-### JSON Configuration (Alternative)
-
-You can also use `config.json` for configuration:
-
-```json
-{
-  "clippy": {
-    "bot_name": "Clippy Bot",
-    "CLIPPY_DISCORD_TOKEN": "your_token_here",
-    "command_prefix": "!",
-    "guild_id": "your_guild_id",
-    "random_responses": true
-  },
-  "music": {
-    "bot_name": "Music Bot", 
-    "MUSIC_DISCORD_TOKEN": "your_token_here",
-    "database_url": "music.db",
-    "max_queue_size": 100,
-    "volume_level": 0.5
-  }
-}
-```
+See Configuration above or `env.example` for a quick template.
 
 ---
 
-## 🚀 Deployment Options
+## 🚀 Deployment
 
 ### Local Development
 ```bash
@@ -388,7 +267,7 @@ You can also use `config.json` for configuration:
 
 ### Production Deployment
 
-#### Option 1: Direct uv Execution
+### Direct uv Execution
 ```bash
 # Run individual bots in production
 uv run --package clippy-bot python -m clippy
@@ -396,7 +275,7 @@ uv run --package music-bot python -m music
 uv run --package mtg-card-bot python -m mtg_card_bot
 ```
 
-#### Option 2: Systemd Services (Linux)
+### Systemd (Linux)
 ```ini
 # /etc/systemd/system/clippy-bot.service
 [Unit]
@@ -416,7 +295,7 @@ Environment=LOG_LEVEL=info
 WantedBy=multi-user.target
 ```
 
-#### Option 3: Docker Containers
+### Docker (example)
 ```dockerfile
 FROM python:3.12-slim
 
@@ -429,7 +308,7 @@ RUN uv sync
 CMD ["uv", "run", "--package", "clippy", "python", "-m", "clippy"]
 ```
 
-#### Option 4: Process Manager (PM2/Supervisor)
+### Compose (example)
 ```yaml
 # docker-compose.yml
 services:
@@ -454,49 +333,10 @@ Each bot can be deployed independently or together based on your infrastructure 
 
 ---
 
-## 🛠️ Development Guide
+## 🛠️ Development Notes
 
-### Setting Up Development Environment
-
-```bash
-# 1. Clone and install dependencies
-git clone https://github.com/dunamismax/python-bots.git
-cd python-bots
-uv sync
-
-# 2. Set up development environment  
-./bin/python-bots setup
-
-# 3. Configure environment
-cp env.example .env
-# Edit .env with your bot tokens
-
-# 4. Install additional tools for music bot
-pip install yt-dlp  # YouTube integration
-# Install FFmpeg for your platform
-
-# 5. Start development
-./bin/python-bots dev
-```
-
-### Code Quality Tools
-
-```bash
-# Format code
-uv run ruff format .
-
-# Lint code  
-uv run ruff check .
-
-# Type checking
-uv run mypy bots/
-
-# Run tests
-uv run pytest
-
-# All quality checks
-./bin/python-bots quality
-```
+- Ensure FFmpeg is installed and on PATH for the music bot.
+- Install `yt-dlp` is handled via `bots/music/pyproject.toml` when using uv.
 
 ### Adding a New Bot
 

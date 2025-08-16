@@ -3,7 +3,6 @@
 import asyncio
 import sys
 import time
-from pathlib import Path
 from typing import Optional
 
 import discord
@@ -16,25 +15,27 @@ from .extractor import AudioExtractor
 from .queue import QueueManager
 
 
-class MusicBot(discord.Client):
+
+
+
+class MusicBot(commands.Bot):
     """Discord bot for music streaming with yt-dlp integration."""
 
     def __init__(self, cfg: config.MusicConfig) -> None:
         """Initialize the Music bot."""
+        # Override command prefix for music bot (slash commands only)
+        cfg.command_prefix = "/music_disabled"
+        
         # Enable voice intents
         intents = discord.Intents.default()
         intents.voice_states = True
         intents.guilds = True
         intents.message_content = True
         
-        # Initialize discord.Client directly
-        super().__init__(intents=intents)
-        
+        super().__init__(command_prefix=cfg.command_prefix, intents=intents)
         self.config = cfg
-        self.logger = logging.with_component("music")
         
-        # Set up command tree for slash commands
-        self.tree = discord.app_commands.CommandTree(self)
+        self.logger = logging.with_component("music")
         
         # Initialize music components
         self.queue_manager = QueueManager()
@@ -46,6 +47,10 @@ class MusicBot(discord.Client):
         
         # Track voice connections
         self.voice_connections: dict[str, discord.VoiceClient] = {}
+
+    async def start(self) -> None:
+        token = getattr(self.config, "token", None) or getattr(self.config, "discord_token", "")
+        await super().start(token)
 
     async def setup_hook(self) -> None:
         """Called when the bot is starting up."""
@@ -100,71 +105,6 @@ class MusicBot(discord.Client):
         # Music bot explicitly ignores text commands
         if message.content.startswith("!"):
             self.logger.debug("Ignoring text command", content=message.content[:20])
-
-    async def on_voice_state_update(
-        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
-    ) -> None:
-        """Handle voice state changes for auto-leave functionality."""
-        # Disable auto-leave functionality for now due to connection issues
-        # The bot will stay in voice channels until manually disconnected
-        return
-            
-    async def _check_auto_leave(self, guild_id: str, bot_channel: discord.VoiceChannel) -> None:
-        """Check if the bot should automatically leave the voice channel."""
-        # Add a small delay to avoid immediate reactions to voice state changes
-        await asyncio.sleep(2.0)
-        
-        # Count non-bot members in the voice channel
-        human_members = [member for member in bot_channel.members if not member.bot]
-        
-        self.logger.info("Checking auto-leave", 
-                       guild_id=guild_id, 
-                       channel=bot_channel.name,
-                       human_members=len(human_members))
-        
-        if len(human_members) == 0:
-            self.logger.info("Starting auto-leave timer - no human members", 
-                           guild_id=guild_id, 
-                           channel=bot_channel.name,
-                           timeout_minutes=self.config.inactivity_timeout/60)
-            
-            # Create a background task for the auto-leave timer
-            asyncio.create_task(self._auto_leave_timer(guild_id, bot_channel))
-            
-    async def _auto_leave_timer(self, guild_id: str, bot_channel: discord.VoiceChannel) -> None:
-        """Timer task for auto-leaving voice channel."""
-        try:
-            # Wait for the inactivity timeout
-            await asyncio.sleep(self.config.inactivity_timeout)
-            
-            # Double-check that no one has joined during the timeout and bot is still connected
-            if guild_id not in self.voice_connections:
-                return
-                
-            voice_client = self.voice_connections[guild_id]
-            current_channel = voice_client.channel
-            human_members = [member for member in current_channel.members if not member.bot]
-            
-            if len(human_members) == 0:
-                self.logger.info("Auto-leaving voice channel after timeout", 
-                               guild_id=guild_id, 
-                               channel=current_channel.name)
-                
-                if voice_client.is_playing():
-                    voice_client.stop()
-                await voice_client.disconnect()
-                del self.voice_connections[guild_id]
-                self.queue_manager.clear_queue(guild_id)
-                
-            else:
-                self.logger.info("Auto-leave cancelled - users rejoined", 
-                               guild_id=guild_id,
-                               human_members=len(human_members))
-                
-        except Exception as e:
-            self.logger.error("Error during auto-leave timer", 
-                            guild_id=guild_id, 
-                            error=str(e))
 
     async def _handle_play_command(self, interaction: discord.Interaction, query: str) -> None:
         """Handle the /play slash command."""
@@ -387,59 +327,27 @@ class MusicBot(discord.Client):
         """Get existing voice connection or create a new one."""
         if guild_id in self.voice_connections:
             voice_client = self.voice_connections[guild_id]
-            # Check if voice client is still connected and valid
-            if voice_client.is_connected() and voice_client.channel == channel:
+            if voice_client.channel == channel and voice_client.is_connected():
                 return voice_client
-            # Different channel or disconnected, clean up and reconnect
+            # Different channel or disconnected, disconnect and reconnect
             try:
                 await voice_client.disconnect()
-            except:
-                pass  # Ignore errors when disconnecting
-            finally:
-                del self.voice_connections[guild_id]
-
-        # Create new voice connection with extended retries and backoff
-        max_retries = 5
-        base_delay = 2.0
-        
-        for attempt in range(max_retries):
-            try:
-                self.logger.info(f"Attempting to connect to voice channel (attempt {attempt + 1})", 
-                               guild_id=guild_id, channel=channel.name)
-                
-                # Use longer timeout and retry with exponential backoff
-                timeout = min(30.0, 10.0 + (attempt * 5.0))
-                voice_client = await channel.connect(timeout=timeout, reconnect=True)
-                self.voice_connections[guild_id] = voice_client
-                
-                self.logger.info("Successfully connected to voice channel", 
-                               guild_id=guild_id, channel=channel.name)
-                return voice_client
-                
-            except discord.errors.ConnectionClosed as e:
-                if "4006" in str(e):
-                    self.logger.warning(f"WebSocket 4006 error (attempt {attempt + 1}), known Discord API issue", 
-                                      error=str(e))
-                else:
-                    self.logger.warning(f"Voice connection attempt {attempt + 1} failed", 
-                                      error=str(e))
-                                      
-                if attempt == max_retries - 1:
-                    # On final failure, provide user-friendly error
-                    raise Exception("Voice connection failed due to Discord API issues (Error 4006). This is a known Discord issue affecting many bots. Please try again later.")
-                    
-                # Exponential backoff with jitter
-                delay = base_delay * (2 ** attempt) + (attempt * 0.5)
-                await asyncio.sleep(min(delay, 15.0))
-                
             except Exception as e:
-                self.logger.warning(f"Voice connection attempt {attempt + 1} failed", 
-                                  error=str(e))
-                if attempt == max_retries - 1:
-                    raise
-                    
-                delay = base_delay * (attempt + 1)
-                await asyncio.sleep(min(delay, 10.0))
+                self.logger.warning("Error disconnecting voice client", error=str(e))
+            finally:
+                if guild_id in self.voice_connections:
+                    del self.voice_connections[guild_id]
+
+        # Create new voice connection with timeout
+        try:
+            voice_client = await asyncio.wait_for(channel.connect(), timeout=30.0)
+            self.voice_connections[guild_id] = voice_client
+            return voice_client
+        except asyncio.TimeoutError:
+            raise Exception("Voice connection timed out after 30 seconds")
+        except Exception as e:
+            self.logger.error("Failed to connect to voice channel", error=str(e))
+            raise
 
     async def _validate_user_in_bot_voice_channel(self, interaction: discord.Interaction) -> bool:
         """Validate that the user is in the same voice channel as the bot."""
@@ -519,8 +427,7 @@ class MusicBot(discord.Client):
         self.logger.info("Shutting down Music bot")
         
         # Disconnect from all voice channels
-        voice_clients_copy = dict(self.voice_connections)
-        for guild_id, voice_client in voice_clients_copy.items():
+        for guild_id, voice_client in list(self.voice_connections.items()):
             try:
                 if voice_client.is_connected():
                     await voice_client.disconnect()
@@ -534,13 +441,7 @@ class MusicBot(discord.Client):
         try:
             await self.audio_extractor.close()
         except Exception as e:
-            self.logger.error("Error closing audio extractor", error=str(e))
+            self.logger.warning("Error closing audio extractor", error=str(e))
         
-        # Clean up audio player
-        if hasattr(self.audio_player, 'cleanup'):
-            try:
-                self.audio_player.cleanup()
-            except Exception as e:
-                self.logger.error("Error cleaning up audio player", error=str(e))
-        
+        # Close the Discord client session
         await super().close()

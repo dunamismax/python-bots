@@ -3,7 +3,6 @@
 import asyncio
 import sys
 import threading
-from pathlib import Path
 from typing import Dict, Optional
 
 import discord
@@ -50,6 +49,14 @@ class AudioPlayer:
                         song=next_song.title)
 
         try:
+            # Check if voice client is still connected
+            if not voice_client.is_connected():
+                self.logger.error("Voice client not connected, cannot play song", 
+                                guild_id=guild_id, song=next_song.title)
+                queue.set_current(None)
+                queue.set_playing(False)
+                return
+
             # Create audio source
             audio_source = await self._create_audio_source(next_song, guild_id)
             
@@ -65,25 +72,13 @@ class AudioPlayer:
             def after_playing(error):
                 if error:
                     self.logger.error("Audio playback error", error=str(error))
-                else:
-                    self.logger.debug("Song playback completed", guild_id=guild_id)
                 
                 # Schedule next song in event loop
-                try:
-                    asyncio.run_coroutine_threadsafe(
-                        self._handle_song_finished(bot, guild_id, voice_client, queue),
-                        bot.loop
-                    )
-                except Exception as e:
-                    self.logger.error("Error scheduling next song", error=str(e))
+                asyncio.run_coroutine_threadsafe(
+                    self._handle_song_finished(bot, guild_id, voice_client, queue),
+                    bot.loop
+                )
 
-            # Check voice client is still connected before playing
-            if not voice_client.is_connected():
-                self.logger.error("Voice client not connected, cannot play audio")
-                queue.set_current(None)
-                queue.set_playing(False)
-                return
-                
             voice_client.play(audio_source, after=after_playing)
             
         except Exception as e:
@@ -98,16 +93,6 @@ class AudioPlayer:
     async def _handle_song_finished(self, bot, guild_id: str, voice_client: discord.VoiceClient, queue) -> None:
         """Handle when a song finishes playing."""
         self.logger.debug("Song finished", guild_id=guild_id)
-        
-        # Check if voice client is still connected
-        if not voice_client.is_connected():
-            self.logger.warning("Voice client disconnected, stopping playback", guild_id=guild_id)
-            queue.set_current(None)
-            queue.set_playing(False)
-            # Clean up the voice connection from bot's tracking
-            if hasattr(bot, 'voice_connections') and guild_id in bot.voice_connections:
-                del bot.voice_connections[guild_id]
-            return
         
         # Clear current song
         queue.set_current(None)
@@ -132,25 +117,18 @@ class AudioPlayer:
             # Get volume for this guild
             volume = self.get_volume(guild_id)
             
-            # FFmpeg options optimized for streaming stability
             ffmpeg_options = {
-                "before_options": (
-                    "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 "
-                    "-http_persistent false -multiple_requests 1"
-                ),
-                "options": "-vn -loglevel error"
+                "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                # Apply volume filter at the encoder to avoid PCM mixing
+                "options": (f"-vn -filter:a volume={volume}" if volume != 0.5 else "-vn"),
             }
             
-            # Create the audio source directly from the URL
-            source = discord.FFmpegPCMAudio(
-                song.url,
-                **ffmpeg_options
+            # Prefer Opus output from FFmpeg to reduce CPU and avoid opus lib issues
+            # Use from_probe to let discord.py detect stream parameters
+            source = await discord.FFmpegOpusAudio.from_probe(
+                source=song.url,
+                **ffmpeg_options,
             )
-            
-            # Apply volume if not default
-            if volume != 0.5:
-                source = discord.PCMVolumeTransformer(source, volume=volume)
-                
             return source
             
         except Exception as e:
@@ -166,20 +144,23 @@ class AudioPlayer:
         try:
             parsed = urlparse(url)
             
-            # Only allow HTTPS URLs
-            if parsed.scheme != 'https':
+            # Only allow HTTP(S) URLs
+            if parsed.scheme not in ('https', 'http'):
                 return False
                 
             # Allow known safe domains for audio
             safe_domains = [
+                # Primary sites
                 'youtube.com', 'youtu.be', 'music.youtube.com',
-                'googlevideo.com',  # YouTube's actual streaming URLs
                 'soundcloud.com', 'spotify.com', 'bandcamp.com',
-                'vimeo.com', 'twitch.tv'
+                'vimeo.com', 'twitch.tv',
+                # Common CDNs/stream hosts returned by yt-dlp
+                'googlevideo.com', 'ytimg.com', 'sndcdn.com', 'scdn.co'
             ]
             
             hostname = parsed.hostname or ""
-            if not any(domain in hostname.lower() for domain in safe_domains):
+            host = hostname.lower()
+            if not any(host == d or host.endswith('.' + d) for d in safe_domains):
                 return False
                 
             return True

@@ -20,7 +20,6 @@ class ClippyBot(discord.Client):
         # Set up intents
         intents = discord.Intents.default()
         intents.message_content = True
-        intents.guilds = True
         
         # Initialize discord.Client directly
         super().__init__(intents=intents)
@@ -253,7 +252,14 @@ class ClippyBot(discord.Client):
     async def close(self) -> None:
         """Clean shutdown of the bot."""
         self.logger.info("Shutting down Clippy bot")
-        self.stop_random_responses()
+        
+        # Stop random responses
+        try:
+            self.stop_random_responses()
+        except Exception as e:
+            self.logger.warning("Error stopping random responses", error=str(e))
+        
+        # Close the Discord client session
         await super().close()
 
 

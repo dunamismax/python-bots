@@ -10,7 +10,7 @@ This repository contains three independent Discord bots built with modern Python
 |-----|------|---------|----------|
 | **MTG Card Bot** | Prefix (`!`) | Magic card lookup | `!card name`, `!random`, `!help` |
 | **Clippy Bot** | Slash (`/`) | Interactive chaos & humor | `/clippy`, `/clippy_wisdom`, `/clippy_help` |
-| **Music Bot** | Slash (`/`) | Audio streaming & playlists | `/play`, `/queue`, `/playlist_create` |
+| **Music Bot** | Slash (`/`) | Audio streaming & queue | `/play`, `/pause`, `/resume`, `/skip`, `/stop`, `/queue`, `/volume` |
 
 ---
 
@@ -158,55 +158,38 @@ RANDOM_MESSAGE_DELAY=3         # Delay before random messages (seconds)
 /volume <0-100>            # Adjust playback volume (0-100%)
 ```
 
-### Advanced Playback
+### Implemented Commands
 
 ```bash
-# Queue management
-/shuffle                    # Shuffle the current queue
-/loop                      # Toggle loop mode (track/queue/off)
-/remove <position>         # Remove specific song from queue
-/clear                     # Clear the entire queue
-/nowplaying               # Show detailed current track info
-/seek <timestamp>         # Seek to specific time (format: 1:30)
-```
-
-### Playlist System (Database Required)
-
-```bash
-# Playlist management
-/playlist_create <name>                    # Create new playlist
-/playlist_list                            # List your playlists  
-/playlist_show <playlist_id>               # Show songs in playlist
-/playlist_play <playlist_id>               # Queue entire playlist
-/playlist_add <playlist_id> [song]         # Add current/specific song to playlist
-/playlist_remove <playlist_id> <position>  # Remove song from playlist
-/playlist_delete <playlist_id>             # Delete entire playlist
-/playlist_rename <playlist_id> <new_name>  # Rename playlist
+/play <url or search>       # Join voice and play/queue
+/pause                      # Pause current song
+/resume                     # Resume playback
+/skip                       # Skip current song
+/stop                       # Stop and disconnect
+/queue                      # Show queue
+/volume <0-100>            # Set or show volume
 ```
 
 ### Features
 
 - **YouTube Integration** - yt-dlp powered search and streaming
-- **Persistent Playlists** - SQLite database storage
-- **Queue Management** - Advanced queue operations
-- **Multi-Server Support** - Isolated queues per Discord server
+- **Queue Management** - Play, skip, and list queue
+- **Multi-Server Support** - Isolated queues per server
 - **Auto-Disconnect** - Leaves voice channel after inactivity
-- **High-Quality Audio** - FFmpeg powered audio processing
+- **FFmpeg Audio** - Reliable Opus streaming
 
 ### System Requirements
 
-- **yt-dlp** - `pip install yt-dlp` (YouTube extraction)
-- **FFmpeg** - [Download FFmpeg](https://ffmpeg.org/download.html) (Audio processing)
-- **Database** - SQLite database file (auto-created)
+- **yt-dlp** (installed via uv for the music bot)
+- **FFmpeg** - [Download FFmpeg](https://ffmpeg.org/download.html)
 
 ### Configuration
 
 ```bash
-# Music bot specific environment variables
-MUSIC_DATABASE_URL=music.db     # Database file path
-MAX_QUEUE_SIZE=100              # Maximum songs in queue
-INACTIVITY_TIMEOUT=300          # Auto-disconnect timeout (5 minutes)
-VOLUME_LEVEL=0.5                # Default volume (0.0-1.0)
+# Music bot environment variables (optional overrides)
+MUSIC_MAX_QUEUE_SIZE=100
+MUSIC_INACTIVITY_TIMEOUT=300
+MUSIC_VOLUME_LEVEL=0.5
 ```
 
 ### Required Permissions

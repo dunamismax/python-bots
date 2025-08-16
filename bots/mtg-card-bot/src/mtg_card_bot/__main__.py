@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from . import config, logging
+
 from .bot import MTGCardBot
 
 
@@ -48,7 +49,7 @@ async def main() -> None:
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        await bot.start(cfg.discord_token)
+        await bot.start()
     except Exception as e:
         logger.error("Failed to start bot", error=str(e))
         sys.exit(1)

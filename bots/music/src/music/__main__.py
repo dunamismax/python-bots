@@ -1,22 +1,53 @@
 """Entry point for the Music Discord bot."""
 
 import asyncio
+import logging
+import os
 import signal
 import sys
 from pathlib import Path
 
-from . import config, logging
+from . import config
+from . import logging as shared_logging
+
 from .bot import MusicBot
 
 
+def load_env_file() -> None:
+    """Load environment variables from .env file if it exists."""
+    env_file = Path(".env")
+    if not env_file.exists():
+        return
+
+    try:
+        with env_file.open() as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Remove quotes if present
+                    if (value.startswith('"') and value.endswith('"')) or (
+                        value.startswith("'") and value.endswith("'")
+                    ):
+                        value = value[1:-1]
+                    
+                    # Only set if not already set by system environment
+                    if key not in os.environ:
+                        os.environ[key] = value
+    except Exception as e:
+        print(f"Warning: failed to load .env file: {e}")
 
 
 async def main() -> None:
     """Main entry point for the Music bot."""
     # Load environment variables from .env file
-    env_file = Path(".env")
-    if env_file.exists():
-        config.load_env_file(env_file)
+    load_env_file()
 
     # Load configuration
     try:
@@ -33,8 +64,8 @@ async def main() -> None:
         sys.exit(1)
 
     # Initialize logging
-    logging.initialize_logger(cfg.log_level, cfg.json_logging)
-    logger = logging.with_component("main")
+    shared_logging.initialize_logger(cfg.log_level, cfg.json_logging)
+    logger = shared_logging.with_component("main")
 
     logger.info("Starting Music Bot", version="1.0.0")
 
@@ -50,7 +81,7 @@ async def main() -> None:
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        await bot.start(cfg.discord_token)
+        await bot.start()
     except Exception as e:
         logger.error("Failed to start Music bot", error=str(e))
         sys.exit(1)

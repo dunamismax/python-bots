@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 import httpx
-
 from . import errors, logging
 
 

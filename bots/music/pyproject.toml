@@ -44,10 +44,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sawyer/python-bots"
-Repository = "https://github.com/sawyer/python-bots.git"
-Documentation = "https://github.com/sawyer/python-bots/blob/main/README.md"
-Issues = "https://github.com/sawyer/python-bots/issues"
+Homepage = "https://github.com/sawyer/discord-py-bots"
+Repository = "https://github.com/sawyer/discord-py-bots.git"
+Documentation = "https://github.com/sawyer/discord-py-bots/blob/main/README.md"
+Issues = "https://github.com/sawyer/discord-py-bots/issues"
 
 [build-system]
 requires = ["hatchling"]

@@ -33,8 +33,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv python install 3.12
 
 # 2. Clone and setup
-git clone https://github.com/dunamismax/python-bots.git
-cd python-bots
+git clone https://github.com/dunamismax/discord-py-bots.git
+cd discord-py-bots
 
 # 3. Configure environment
 cp env.example .env
@@ -95,7 +95,7 @@ Full-featured audio streaming with YouTube integration and queue management.
 ## Architecture
 
 ```
-python-bots/
+discord-py-bots/
 ├── bots/                    # Independent bot applications
 │   ├── clippy/             # Interactive AI assistant
 │   ├── mtg-card-bot/       # Magic card lookups

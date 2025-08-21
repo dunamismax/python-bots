@@ -4,7 +4,7 @@
 This project uses a local clone of discord.py to access unreleased fixes for voice connection issues (WebSocket 4006 error). This guide outlines the best practices for updating and maintaining the local discord.py repository.
 
 ## Current Setup
-- **Location**: `/Users/sawyer/github/python-bots/discord.py/`
+- **Location**: `/Users/sawyer/github/discord-py-bots/discord.py/`
 - **Version**: 2.6.0a (includes voice v8 protocol fix)
 - **Fix Commit**: `2175bd51c0d0c2817e69a708e507108f3bc902bd`
 - **Used by**: All three bots (music, mtg-card-bot, clippy)
@@ -16,7 +16,7 @@ This approach preserves the current working state while testing updates.
 
 ```bash
 # 1. Navigate to your main project directory
-cd /Users/sawyer/github/python-bots
+cd /Users/sawyer/github/discord-py-bots
 
 # 2. Create a backup of current working discord.py
 cp -r discord.py discord.py.backup
@@ -65,7 +65,7 @@ When you want to start completely fresh or if the repository gets corrupted.
 
 ```bash
 # 1. Navigate to main project directory
-cd /Users/sawyer/github/python-bots
+cd /Users/sawyer/github/discord-py-bots
 
 # 2. Backup current version (optional)
 mv discord.py discord.py.old
@@ -227,7 +227,7 @@ When discord.py 2.6.0 is officially released to PyPI:
 ```bash
 # 1. Update all bot pyproject.toml files to use PyPI version
 # Change from:
-"discord.py @ file:///Users/sawyer/github/python-bots/discord.py",
+"discord.py @ file:///Users/sawyer/github/discord-py-bots/discord.py",
 # Back to:
 "discord.py>=2.6.0",
 

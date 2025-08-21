@@ -1,5 +1,5 @@
 [project]
-name = "python-bots"
+name = "discord-py-bots"
 version = "2.0.0"
 description = "Modern Discord bot monorepo written in Python"
 authors = [

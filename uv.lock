@@ -9,9 +9,9 @@ resolution-markers = [
 [manifest]
 members = [
     "clippy-bot",
+    "discord-py-bots",
     "mtg-card-bot",
     "music-bot",
-    "python-bots",
 ]
 
 [[package]]
@@ -367,6 +367,46 @@ requires-dist = [
     { name = "zstandard", marker = "extra == 'speed'", specifier = ">=0.23.0" },
 ]
 provides-extras = ["voice", "docs", "speed", "test", "dev"]
+
+[[package]]
+name = "discord-py-bots"
+version = "2.0.0"
+source = { virtual = "." }
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "discord-py" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.1.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.9" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "discord-py", directory = "discord.py" },
+    { name = "mypy", specifier = ">=1.17.1" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-asyncio", specifier = ">=1.1.0" },
+    { name = "ruff", specifier = ">=0.12.9" },
+]
 
 [[package]]
 name = "distlib"
@@ -1052,46 +1092,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4e/51/f8794af39eeb870e87a8c8068642fc07bce0c854d6865d7dd0f2a9d338c2/pytest_asyncio-1.1.0.tar.gz", hash = "sha256:796aa822981e01b68c12e4827b8697108f7205020f24b5793b3c41555dab68ea", size = 46652, upload-time = "2025-07-16T04:29:26.393Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/9d/bf86eddabf8c6c9cb1ea9a869d6873b46f105a5d292d3a6f7071f5b07935/pytest_asyncio-1.1.0-py3-none-any.whl", hash = "sha256:5fe2d69607b0bd75c656d1211f969cadba035030156745ee09e7d71740e58ecf", size = 15157, upload-time = "2025-07-16T04:29:24.929Z" },
-]
-
-[[package]]
-name = "python-bots"
-version = "2.0.0"
-source = { virtual = "." }
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "discord-py" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.1.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.9" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "discord-py", directory = "discord.py" },
-    { name = "mypy", specifier = ">=1.17.1" },
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-asyncio", specifier = ">=1.1.0" },
-    { name = "ruff", specifier = ">=0.12.9" },
 ]
 
 [[package]]
